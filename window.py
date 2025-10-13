@@ -3,6 +3,7 @@
 import sys, time
 from Xlib import X, display, Xutil, ext
 import Xlib
+from Xlib.keysymdef.latin1 import *
 
 # Establish a connection to the X server
 disp = display.Display()
@@ -49,6 +50,7 @@ class BaseWindow(object):
         self.gray = self.colormap.alloc_color(0xcfff, 0xcfff, 0xcfff).pixel
         self.lgray = self.colormap.alloc_color(0xdfff, 0xdfff, 0xdfff).pixel
         self.dgray = self.colormap.alloc_color(0xbfff, 0xbfff, 0xbfff).pixel
+        self.ddgray = self.colormap.alloc_color(0xbfff, 0xbfff, 0xbfff).pixel
 
         #print("lookup", self.colormap.lookup_color("green"))
 
@@ -97,7 +99,11 @@ class BaseWindow(object):
             join_style=X.JoinBevel
             )
         #self.gc.change(line_width=5)
-        #print(self.window.get_attributes())
+        self.window.change_attributes(border_pixel=self.dgray, border_width=5) # Set border to red and 5 pixels wide
+        self.d.flush()
+
+        print(self.window.get_attributes())
+
         #self.window.change_attributes(event_mask=event_maskx)
         #self.window.change_attributes(backing_store=0)
         #ext.shape.select_input(self.d, True)
@@ -125,7 +131,7 @@ class BaseWindow(object):
         self.geom = self.window.get_geometry()
         self.window.map()
         self.geom = self.window.get_geometry()
-        #print("geom", self.geom)
+        print("geom", self.geom)
 
     def invalidate(self, window = None):
 
@@ -162,9 +168,9 @@ class Window(BaseWindow):
                     print("focus change:", self.d.get_input_focus().focus, "child:", e.window)
             for aa in self.children:
                 if e.window == aa.window :
-                    ret = aa.pevent(e)
+                    processed = aa.pevent(e)
                     #print("ret:", ret)
-                    if ret:
+                    if processed:
                         continue
 
             if e.type == X.MotionNotify:
@@ -224,7 +230,27 @@ class Window(BaseWindow):
                 current.motion(e)
 
             if e.type == X.KeyPress:
-                print("main keypress", e)
+                print("main keypress: ", dir(e), e._data)
+
+                #sym = self.d.keycode_to_keysym(e.detail, e.state)
+                #sym = self.d.keycode_to_keysym(XK_x, 0)
+                #print("sym", sym)
+                #cc = self.d.keysym_to_keycode(XK_x)
+                #print("cc", cc)
+                #if e.state & X.ShiftMask:
+                #    print("shift", end = " ")
+                #if e.state & X.ControlMask:
+                #    print("ctrl", end = " ")
+                #if e.state & X.Mod1Mask:
+                #    print("alt", end = " ")
+                #print("Event:", e)
+
+                if  e.state & X.Mod1Mask and e.detail ==  self.d.keysym_to_keycode(XK_x):
+                    print("ALT_X")
+                    sys.exit(0)
+
+            if e.type == X.KeyRelease:
+                print("main keyrelease", e)
 
         # Exit
         print("Exited loop.")
@@ -236,8 +262,9 @@ class pButton(BaseWindow):
         super().__init__(display, parent, xx, yy, www, hhh, border)
         self.window.change_attributes(background_pixel=self.dgray)
         ggg=self.window.get_geometry()
+        self.window.change_attributes(border_pixel=self.dgray, border_width=5) # Set border to red and 5 pixels wide
         self.window.clear_area(0, 0, ggg.width, ggg.height)
-        #self.invalidate(self.window)
+        self.invalidate(self.window)
 
     def pevent(self, e):
         #print("in button event:", e)
@@ -252,8 +279,14 @@ class pButton(BaseWindow):
         if e.type == X.EnterNotify:
             attr = self.window.get_attributes()
             self.window.change_attributes(background_pixel=self.lgray)
+            #self.window.change_attributes(border_pixel=self.dgray, border_width=5) # Set border to red and 5 pixels wide
+
             ggg=self.window.get_geometry()
             self.window.clear_area(0, 0, ggg.width, ggg.height)
+            self.gc.change(line_width=5)
+            self.gc.change(foreground = self.ddgray)
+            self.window.rectangle(self.gc, 0,0, ggg.width-1, ggg.height-1)
+
             self.invalidate(self.window)
             got = True
 
@@ -267,8 +300,9 @@ class pButton(BaseWindow):
         if e.type == X.KeyPress:
             print("butt keypress", e)
             got = True
+
         if e.type == X.KeyRelease:
-            print("butt keypress", e)
+            print("butt keyrelease", e)
             got = True
 
         return got
