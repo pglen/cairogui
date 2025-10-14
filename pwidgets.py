@@ -2,7 +2,7 @@
 
 import  sys, time
 
-sys.path.append("python_xlib")
+#sys.path.append("python_xlib")
 
 import  Xlib
 from    Xlib import display, Xutil, ext
@@ -14,7 +14,6 @@ event_maskx =  (    Xlib.X.ExposureMask |
                     Xlib.X.SubstructureRedirectMask |
                     Xlib.X.ButtonPressMask |
                     Xlib.X.ButtonReleaseMask |
-                    #Xlib.X.Button1MotionMask |
                     Xlib.X.PointerMotionMask |
                     Xlib.X.PointerMotionHintMask |
                     Xlib.X.KeyPressMask |
@@ -27,9 +26,11 @@ event_maskx =  (    Xlib.X.ExposureMask |
                     Xlib.X.CWEventMask |
                     Xlib.X.FocusChangeMask )
 
+                    #Xlib.X.Button1MotionMask |
+
 class BaseWindow(object):
 
-    ''' Base for all '''
+    ''' Base for all widgets '''
 
     def __init__(self, display, parent, xx, yy, www, hhh, border = 0):
 
@@ -79,7 +80,7 @@ class BaseWindow(object):
         #print("exts", self.d.list_extensions())
         old = self.d.get_font_path()
         old.append("/usr/share/fonts/opentype")
-        print("fonts", old)
+        #print("fonts", old)
         #self.d.set_font_path(old)
         #newp = self.d.get_font_path()
 
@@ -156,10 +157,12 @@ class BaseWindow(object):
 
 class pButton(BaseWindow):
 
-    def __init__(self, display, parent, text, xx, yy, www, hhh, border = 0):
+    def __init__(self, display, parent, text, xx, yy, callme=None, border=4):
 
-        #print("pButton.__init__", text, border)
+        #print("pButton.__init__", display, parent, "text:", text,
+        #                    xx, yy, "callme", callme, "border", border)
 
+        self.callme = callme
         self.border = border
         if type(text) != type(b""):
             self.text = text.encode()
@@ -177,9 +180,9 @@ class pButton(BaseWindow):
         font = display.open_font(self.lll[0])
         self.te = font.query_text_extents(self.text)
         #print("te", te)
-        nhhh = self.te.font_ascent + self.te.font_descent + 4 * border
-        nwww = self.te.overall_width + 4 * border
-        super().__init__(display, parent, xx, yy, nwww, nhhh, border)
+        nhhh = self.te.font_ascent + self.te.font_descent + 4 * self.border
+        nwww = self.te.overall_width + 4 * self.border
+        super().__init__(display, parent, xx, yy, nwww, nhhh, self.border)
         self.geom = self.window.get_geometry()
         self.gc.change(line_width=self.border)
         self.pressed = 0
@@ -235,12 +238,14 @@ class pButton(BaseWindow):
         if e.type == Xlib.X.ButtonPress:
             self.pressed = 1
             self._focstate()
-            print("pbutt mousepress", e)
+            #print("pbutt mousepress", e)
 
         if e.type == Xlib.X.ButtonRelease:
             self.pressed = 0
             self._focstate()
-            print("pbutt mouserelease", e)
+            #print("pbutt mouserelease", e)
+            if self.callme:
+                self.callme(self)
 
         if e.type == Xlib.X.KeyPress:
             print("pbutt keypress", e)
@@ -250,6 +255,114 @@ class pButton(BaseWindow):
             print("pbutt keyrelease", e)
             got = True
 
+        return got
+
+class pCheck(BaseWindow):
+
+    def __init__(self, display, parent, text, xx, yy, callme=None, border=4):
+
+        #print("pButton.__init__", display, parent, "text:", text,
+        #                    xx, yy, "callme", callme, "border", border)
+
+        self.callme = callme
+        self.border = border
+        if type(text) != type(b""):
+            self.text = text.encode()
+        else:
+            self.text = text
+        font_name = "fixed-medium"
+        font_size = 18
+        fontx = "*%s*--%d*" % (font_name, font_size)
+        #fontx = "*"
+        #print("fontx", fontx)
+        #self.lll = self.d.list_fonts_with_info(fontx, 100)
+        self.lll = display.list_fonts(fontx, 100)
+        #for aa in self.lll:
+        #    print(aa)
+        font = display.open_font(self.lll[0])
+        self.te = font.query_text_extents(self.text)
+        #print("te", te)
+        nhhh = self.te.font_ascent + self.te.font_descent + 4 * self.border
+        nwww = self.te.overall_width + 4 * self.border + 2 * self.te.font_ascent + self.te.font_descent
+        super().__init__(display, parent, xx, yy, nwww, nhhh, self.border)
+        self.geom = self.window.get_geometry()
+        self.gc.change(line_width=self.border)
+        self.pressed = 0
+        self._defstate()
+
+        #self.gc.change(foreground = self.screen.black_pixel)
+        #te = self.gc.query_text_extents(text)
+        self._textout()
+        #self.invalidate(self.window)
+        #print("gc:", dir(self.gc.query))
+        #te = self.gc.query()
+        #print("fff", te._data['char_infos'][0])
+        #print("te len:", len(ddd))
+        #for aa in te._data['char_infos']:
+        #    print("te:", aa['character_width'], end = " " )
+
+    def _textout(self):
+        self.gc.change(foreground = self.black)
+        self.gc.change(line_width=1)
+        self.window.rectangle(self.gc, 2 * self.border,
+                    2 * self.border + self.te.font_descent,
+                        self.te.font_ascent,
+                            self.te.font_ascent)
+
+        self.gc.change(foreground = self.screen.black_pixel)
+        self.window.draw_text(self.gc, 24 + 2 * self.border + self.pressed,
+                    self.te.font_ascent + 2 * self.border + self.pressed,
+                         self.text)
+
+    def _defstate(self):
+        self.window.change_attributes(background_pixel = self.dgray)
+        self.window.clear_area(0, 0, self.geom.width, self.geom.height)
+        self.gc.change(foreground = self.ddgray)
+        #self.window.rectangle(self.gc, 0, 0, self.geom.width-1, self.geom.height-1)
+        self._textout();
+
+    def _focstate(self):
+        self.window.change_attributes(background_pixel=self.lgray)
+        self.window.clear_area(0, 0, self.geom.width-1, self.geom.height-1)
+        #self.gc.change(foreground = self.llgray)
+        #self.window.rectangle(self.gc, self.pressed, self.pressed,
+        #                        self.geom.width-1, self.geom.height-1)
+        self._textout();
+        #self.invalidate(self.window)
+
+    def pevent(self, e):
+        #print("in pbutton event:", e)
+        got = 0
+        if e.type == Xlib.X.CreateNotify:
+            got = True
+
+        if e.type == Xlib.X.EnterNotify:
+            self._focstate()
+            got = True
+
+        if e.type == Xlib.X.LeaveNotify:
+            self._defstate()
+            got = True
+
+        if e.type == Xlib.X.ButtonPress:
+            self.pressed = 1
+            self._focstate()
+            #print("pbutt mousepress", e)
+
+        if e.type == Xlib.X.ButtonRelease:
+            self.pressed = 0
+            self._focstate()
+            #print("pbutt mouserelease", e)
+            if self.callme:
+                self.callme(self)
+
+        if e.type == Xlib.X.KeyPress:
+            print("pbutt keypress", e)
+            got = True
+
+        if e.type == Xlib.X.KeyRelease:
+            print("pbutt keyrelease", e)
+            got = True
 
         return got
 
@@ -257,18 +370,21 @@ class MainWindow(BaseWindow):
 
     def __init__(self, display, parent , xx, yy, www, hhh):
         super().__init__(display, parent, xx, yy, www, hhh)
-
         self.children = []
-        child = pButton(self.d, self.window, b"Hello World",
-                        www//4, hhh//4, www//2, hhh//2, border = 4)
-        self.children.append(child)
-        child.window.map()
+
+    def add_widget(self,widget):
+        self.children.append(widget)
 
     # Main loop, handling events
-    def winloop(self):
+    def defloop(self):
         current = None
         while 1:
             e = self.d.next_event()
+            self.defproc()
+
+    def defproc(self, e):
+        current = None ; ret = False
+        while 1:
             if e.type == Xlib.X.ButtonPress:
                 if self.d.get_input_focus().focus != e.window:
                     e.window.set_input_focus(Xlib.X.RevertToParent, Xlib.X.CurrentTime )
@@ -292,12 +408,14 @@ class MainWindow(BaseWindow):
                     fmt, data = e.data
                     if fmt == 32 and data[0] == self.WM_DELETE_WINDOW:
                         #print("Exit client prot")
+                        ret = True
                         break
                         #sys.exit(0)
 
             # Window has been destroyed, quit
             if e.type == Xlib.X.DestroyNotify:
                 print("Exit dest")
+                ret = True
                 break
                 #sys.exit(0)
 
@@ -340,11 +458,70 @@ class MainWindow(BaseWindow):
                 #print("main keypress: ", dir(e), e._data)
                 if  e.state & Xlib.X.Mod1Mask and e.detail ==  self.d.keysym_to_keycode(XK_x):
                     print("ALT_X")
-                    sys.exit(0)
+                    ret = True
+                    #sys.exit(0)
 
             if e.type == Xlib.X.KeyRelease:
                 print("main keyrelease", e)
+            break
+        return ret
 
-        # Exit
-        print("Exited loop.")
+class pLabel(BaseWindow):
 
+    def __init__(self, display, parent, text, xx, yy, border=0):
+
+        #print("pButton.__init__", text, border)
+
+        self.border = border
+        if type(text) != type(b""):
+            self.text = text.encode()
+        else:
+            self.text = text
+        font_name = "fixed-medium"
+        font_size = 18
+        fontx = "*%s*--%d*" % (font_name, font_size)
+        #fontx = "*"
+        #print("fontx", fontx)
+        #self.lll = self.d.list_fonts_with_info(fontx, 100)
+        self.lll = display.list_fonts(fontx, 100)
+        #for aa in self.lll:
+        #    print(aa)
+        font = display.open_font(self.lll[0])
+        self.te = font.query_text_extents(self.text)
+        #print("te", te)
+        nhhh = self.te.font_ascent + self.te.font_descent + 4 * self.border
+        nwww = self.te.overall_width + 4 * self.border
+        super().__init__(display, parent, xx, yy, nwww, nhhh, self.border)
+        self.geom = self.window.get_geometry()
+        self.gc.change(line_width=self.border)
+        self.pressed = 0
+        self._defstate()
+
+        #self.gc.change(foreground = self.screen.black_pixel)
+        #te = self.gc.query_text_extents(text)
+        self._textout()
+        #self.invalidate(self.window)
+        #print("gc:", dir(self.gc.query))
+        #te = self.gc.query()
+        #print("fff", te._data['char_infos'][0])
+        #print("te len:", len(ddd))
+        #for aa in te._data['char_infos']:
+        #    print("te:", aa['character_width'], end = " " )
+
+    def _textout(self):
+        self.gc.change(foreground = self.screen.black_pixel)
+        self.window.draw_text(self.gc, 2 * self.border + self.pressed,
+                    self.te.font_ascent + 2 * self.border + self.pressed,
+                         self.text)
+    def _defstate(self):
+        #self.window.change_attributes(background_pixel = self.dgray)
+        self.window.clear_area(0, 0, self.geom.width, self.geom.height)
+        self.gc.change(foreground = self.ddgray)
+        #self.window.rectangle(self.gc, 0, 0, self.geom.width-1, self.geom.height-1)
+        self._textout();
+
+    def pevent(self, e):
+        print("in label event:", e)
+
+
+# EOF
