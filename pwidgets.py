@@ -162,6 +162,7 @@ class pButton(BaseWindow):
         #print("pButton.__init__", display, parent, "text:", text,
         #                    xx, yy, "callme", callme, "border", border)
 
+        self.checked = False
         self.callme = callme
         self.border = border
         if type(text) != type(b""):
@@ -264,6 +265,7 @@ class pCheck(BaseWindow):
         #print("pButton.__init__", display, parent, "text:", text,
         #                    xx, yy, "callme", callme, "border", border)
 
+        self.checked = True
         self.callme = callme
         self.border = border
         if type(text) != type(b""):
@@ -288,7 +290,8 @@ class pCheck(BaseWindow):
         self.geom = self.window.get_geometry()
         self.gc.change(line_width=self.border)
         self.pressed = 0
-        self._defstate()
+        #self._defstate()
+        self._focstate()
 
         #self.gc.change(foreground = self.screen.black_pixel)
         #te = self.gc.query_text_extents(text)
@@ -301,16 +304,24 @@ class pCheck(BaseWindow):
         #for aa in te._data['char_infos']:
         #    print("te:", aa['character_width'], end = " " )
 
-    def _textout(self):
+    def _checkout(self):
         self.gc.change(foreground = self.black)
         self.gc.change(line_width=1)
-        self.window.rectangle(self.gc, 2 * self.border,
-                    2 * self.border + self.te.font_descent,
-                        self.te.font_ascent,
-                            self.te.font_ascent)
+        self.window.rectangle(self.gc,
+                    self.geom.height // 4, self.geom.height // 4,
+                        2 * self.geom.height // 4, 2 * self.geom.height // 4)
+        if self.checked:
+            base = 2 * self.border # + 2
+            self.window.poly_line(self.gc, Xlib.X.CoordModeOrigin,
+                        [
+                        (base + 2, base + self.te.font_descent + 2),
+                        (base + self.te.font_ascent // 2, base + self.te.font_ascent ),
+                        (base + self.te.font_ascent, base + self.te.font_descent),
+                         ])
 
+    def _textout(self):
         self.gc.change(foreground = self.screen.black_pixel)
-        self.window.draw_text(self.gc, 24 + 2 * self.border + self.pressed,
+        self.window.draw_text(self.gc, self.geom.height + 2 * self.border + self.pressed,
                     self.te.font_ascent + 2 * self.border + self.pressed,
                          self.text)
 
@@ -320,18 +331,20 @@ class pCheck(BaseWindow):
         self.gc.change(foreground = self.ddgray)
         #self.window.rectangle(self.gc, 0, 0, self.geom.width-1, self.geom.height-1)
         self._textout();
+        self._checkout();
 
     def _focstate(self):
-        self.window.change_attributes(background_pixel=self.lgray)
-        self.window.clear_area(0, 0, self.geom.width-1, self.geom.height-1)
+        #self.window.change_attributes(background_pixel=self.lgray)
+        #self.window.clear_area(0, 0, self.geom.width-1, self.geom.height-1)
         #self.gc.change(foreground = self.llgray)
         #self.window.rectangle(self.gc, self.pressed, self.pressed,
         #                        self.geom.width-1, self.geom.height-1)
         self._textout();
+        self._checkout();
         #self.invalidate(self.window)
 
     def pevent(self, e):
-        #print("in pbutton event:", e)
+        print("in check event:", e)
         got = 0
         if e.type == Xlib.X.CreateNotify:
             got = True
@@ -341,27 +354,28 @@ class pCheck(BaseWindow):
             got = True
 
         if e.type == Xlib.X.LeaveNotify:
-            self._defstate()
+            #self._defstate()
             got = True
 
         if e.type == Xlib.X.ButtonPress:
-            self.pressed = 1
-            self._focstate()
-            #print("pbutt mousepress", e)
+            got = True
 
         if e.type == Xlib.X.ButtonRelease:
-            self.pressed = 0
-            self._focstate()
-            #print("pbutt mouserelease", e)
+            #self.pressed = 0
             if self.callme:
                 self.callme(self)
+            self.checked = not self.checked
+            self._focstate()
+            self.invalidate(self.window)
+            print("check mouserelease", e, self.checked)
+            got = True
 
         if e.type == Xlib.X.KeyPress:
-            print("pbutt keypress", e)
+            print("check keypress", e)
             got = True
 
         if e.type == Xlib.X.KeyRelease:
-            print("pbutt keyrelease", e)
+            print("check keyrelease", e)
             got = True
 
         return got
@@ -388,7 +402,7 @@ class MainWindow(BaseWindow):
             if e.type == Xlib.X.ButtonPress:
                 if self.d.get_input_focus().focus != e.window:
                     e.window.set_input_focus(Xlib.X.RevertToParent, Xlib.X.CurrentTime )
-                    print("focus change:", self.d.get_input_focus().focus, "child:", e.window)
+                    #print("focus change:", self.d.get_input_focus().focus, "child:", e.window)
             for aa in self.children:
                 if e.window == aa.window :
                     processed = aa.pevent(e)

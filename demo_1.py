@@ -33,12 +33,11 @@ class mainwin(MainWindow):
         super().__init__(disp, disp.screen().root, xx, yy, width, width)
 
         basex = width//4 ; basey = 32
-        ttt = b"Button %d Press"
-        child = None #pButton(self.d, self.window, ttt, basex, basey, callme)
-        #self.add_widget(child)
+        ttt = b"Button %d Widget"
+        child = None
 
+        # Add buttons
         for aa in range(4):
-            # Add buttons
             if not child:
                 offs = 0
             else:
