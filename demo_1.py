@@ -12,10 +12,9 @@ from    Xlib.keysymdef.latin1 import *
 
 print("file:", X.__file__)
 
-#pLabel,
-
-from pwidgets import pConfig, pRadio, pCheck
-from pwidgets import pButton, MainWindow
+from pguibase import BaseWindow, pConfig
+from pwidgets import pConfig, pRadio, pCheck, pButton
+from pmainwin import MainWindow
 from ptext import pText
 
 def argsfunc():
@@ -34,10 +33,10 @@ def argsfunc():
                        default=18,
                        help='Font size')
     parser.add_argument('--width', type=int,
-                       default=400,
+                       default=500,
                        help='Window size')
     parser.add_argument('--height', type=int,
-                       default=300,
+                       default=400,
                        help='Window size')
     args = parser.parse_args()
     return args
@@ -60,7 +59,7 @@ class mainwin(MainWindow):
     def __init__(self, disp, xx, yy, width, height, args):
 
         config = pConfig(disp, disp.screen().root)
-        config.xx = config.yy = 0
+        config.xx = config.yy = 10
         config.www = width ; config.hhh = height
         config.text = "Main "
 
@@ -70,19 +69,21 @@ class mainwin(MainWindow):
         #self.add_widget(child)
 
         basex = 24 ; basey = 32
-        ttt = b"Button %d Widget"
         child = None
         offs = 8
-
         config = pConfig(disp, self.window)
         config.xx = basex ; config.yy = 22
         config.www = 250  ; config.hhh = 150
-        config.text = "Button "
+        #config.text = "Button"
+        config.font_size = args.fontsize
+        config.name_size = args.fontname
 
         # Add buttons
         for aa in range(2):
+            config.text = "Button %d Here" % (aa + 1)
             if child:
-                offs = (child.geom.height + 14) * (aa )
+                #offs = (child.geom.height + 14) * (aa )
+                config.yy += child.geom.height + 6
             child = pButton(config, args)
             self.add_widget(child)
 
