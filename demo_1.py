@@ -10,7 +10,7 @@ sys.path = ["python_xlib",] + sys.path
 from    Xlib import X, display, Xutil, ext
 from    Xlib.keysymdef.latin1 import *
 
-print("file:", X.__file__)
+#print("file:", X.__file__)
 
 from pguibase import BaseWindow, pConfig
 from pwidgets import pConfig, pRadio, pCheck, pButton
@@ -74,9 +74,8 @@ class mainwin(MainWindow):
         config = pConfig(disp, self.window)
         config.xx = basex ; config.yy = 22
         config.www = 250  ; config.hhh = 150
-        #config.text = "Button"
         config.font_size = args.fontsize
-        config.name_size = args.fontname
+        config.font_name = args.fontname
 
         # Add buttons
         for aa in range(2):
@@ -87,8 +86,14 @@ class mainwin(MainWindow):
             child = pButton(config, args)
             self.add_widget(child)
 
-        #child = pCheck(self.d, self.window, "Check button", basex, 130, callme)
-        #self.add_widget(child)
+        config2 = pConfig(disp, self.window)
+        config2.font_size = args.fontsize
+        config2.font_name = args.fontname
+        config2.text = "Checkbox"
+        config2.xx = basex ; config2.yy = 170
+        child = pCheck(config2, args)
+        self.add_widget(child)
+
         #
         #child = pRadio(self.d, self.window, "Radio button",  basex, 170, callme)
         #self.add_widget(child)

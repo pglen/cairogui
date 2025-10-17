@@ -22,11 +22,7 @@ class pButton(BaseWindow):
         self.config  = config
         self.callme  = config.callme
         self.text    = config.text
-        #if type(config.text) != type(b""):
-        #    self.text = config.text.encode()
-        #else:
-        #    self.text = config.text
-        self.font = Makefont(config.font_name, config.font_size)
+        self.font = Makefont(config.font_name, config.font_size, args)
         self.size = self.font.get_size(self.config.text)
         config.www, config.hhh = self.size
 
@@ -34,22 +30,14 @@ class pButton(BaseWindow):
         config.hhh += 2 * config.border
 
         super().__init__(config, args)
-
+        #time.sleep(1)
         self.geom = self.window.get_geometry()
+
         self.gc.change(line_width=self.config.border)
         self.image = Image.new("RGB", (self.size[0], self.size[1]), self.gray)
         self.draw = ImageDraw.Draw(self.image)
         self._defstate()
 
-    def draw_font(self, text):
-
-        ''' Draw proportional font '''
-        self.draw.rectangle((0, 0, self.size[0], self.size[1]), self.gray)
-        self.draw.text((self.pressed, self.pressed), text, fill="black",
-                                font=self.font.font, anchor="la")
-        self.window.put_pil_image(self.gc,
-                                    self.config.border, self.config.border,
-                                            self.image)
     def _defstate(self):
         self.window.change_attributes(background_pixel = self.dgray)
         self.window.clear_area(0, 0, self.geom.width, self.geom.height)
@@ -57,14 +45,7 @@ class pButton(BaseWindow):
         self.gc.change(foreground = self.ddgray)
         self.draw_foc()
 
-    def draw_foc(self):
-        if self.d.get_input_focus().focus == self.window:
-            self.gc.change(line_style=X.LineOnOffDash)
-        else:
-            self.gc.change(line_style=X.LineSolid)
-        self.window.rectangle(self.gc, 0, 0, self.geom.width-1, self.geom.height-1)
-
-    def _focstate(self):
+    def _enterstate(self):
         self.window.change_attributes(background_pixel=self.lgray)
         self.window.clear_area(0, 0, self.geom.width-1, self.geom.height-1)
         self.draw_font(self.text)
@@ -79,7 +60,7 @@ class pButton(BaseWindow):
             got = True
 
         if e.type == X.EnterNotify:
-            self._focstate()
+            self._enterstate()
             got = True
 
         if e.type == X.LeaveNotify:
@@ -87,74 +68,63 @@ class pButton(BaseWindow):
             got = True
 
         if e.type == X.FocusIn:
-            print("ptext focusIn", e)
+            #print("ptext focusIn", e)
             self._defstate()
             got = True
 
         if e.type == X.FocusOut:
-            print("ptext focusOut", e)
+            #print("ptext focusOut", e)
             self._defstate()
             got = True
 
         if e.type == X.ButtonPress:
             self.pressed = 1
-            self._focstate()
+            self._enterstate()
             #print("pbutt mousepress", e)
 
         if e.type == X.ButtonRelease:
             self.pressed = 0
-            self._focstate()
+            self._enterstate()
             #print("pbutt mouserelease", e)
             if self.callme:
                 self.callme(self)
 
         if e.type == X.KeyPress:
-            print("pbutt keypress", e)
+            #print("pbutt keypress", e)
             got = True
 
         if e.type == X.KeyRelease:
-            print("pbutt keyrelease", e)
+            #print("pbutt keyrelease", e)
             got = True
 
         return got
 
 class pCheck(BaseWindow):
 
-    def __init__(self, display, parent, text, xx, yy, callme=None, border=4):
+    ''' Check button '''
 
-        #print("pButton.__init__", display, parent, "text:", text,
-        #                    xx, yy, "callme", callme, "border", border)
+    def __init__(self, config, args):
 
-        self.checked = True
-        self.callme = callme
-        self.border = border
-        if type(text) != type(b""):
-            self.text = text.encode()
-        else:
-            self.text = text
+        if args.verbose:
+            print("pCheck.__init__", config)
 
-        font = init_widget_font(display)
-        self.te = font.query_text_extents(self.text)
-        #print("te", te)
-        nhhh = self.te.font_ascent + self.te.font_descent + 4 * self.border
-        nwww = self.te.overall_width + 4 * self.border + 2 * self.te.font_ascent + self.te.font_descent
-        super().__init__(display, parent, xx, yy, nwww, nhhh, self.border)
-        self.geom = self.window.get_geometry()
-        self.gc.change(line_width=self.border)
         self.pressed = 0
-        #self._defstate()
-        self._focstate()
+        self.checked = True
+        self.config  = config
+        self.callme  = config.callme
+        self.text    = config.text
 
-        #self.gc.change(foreground = self.screen.black_pixel)
-        #te = self.gc.query_text_extents(text)
-        self._textout()
-        #self.invalidate(self.window)
-        #print("gc:", dir(self.gc.query))
-        #te = self.gc.query()
-        #print("fff", te._data['char_infos'][0])
-        #print("te len:", len(ddd))
-        #for aa in te._data['char_infos']:
-        #    print("te:", aa['character_width'], end = " " )
+        self.font = Makefont(config.font_name, config.font_size, args)
+        self.size = self.font.get_size(self.config.text)
+        config.www, config.hhh = self.size
+        config.www += + self.size[1]
+        super().__init__(config, args)
+
+        #self.image = Image.new("RGB", (self.size[0], self.size[1]), self.gray)
+        self.image = Image.new("RGB", (config.www, config.hhh), self.gray)
+        self.draw = ImageDraw.Draw(self.image)
+        self.geom = self.window.get_geometry()
+        self._defstate()
 
     def _checkout(self):
         self.gc.change(foreground = self.black)
@@ -163,37 +133,26 @@ class pCheck(BaseWindow):
                     self.geom.height // 4, self.geom.height // 4,
                         2 * self.geom.height // 4, 2 * self.geom.height // 4)
         if self.checked:
-            base = 2 * self.border # + 2
+            base = 2 * self.config.border # + 2
             self.window.poly_line(self.gc, X.CoordModeOrigin,
-                        [
-                        (base + 2, base + self.te.font_descent + 2),
-                        (base + self.te.font_ascent // 2, base + self.te.font_ascent ),
-                        (base + self.te.font_ascent, base + self.te.font_descent),
-                         ])
-
-    def _textout(self):
-        self.gc.change(foreground = self.screen.black_pixel)
-        self.window.draw_text(self.gc, self.geom.height + 2 * self.border + self.pressed,
-                    self.te.font_ascent + 2 * self.border + self.pressed,
-                         self.text)
+                [
+                (base + 2, base  + 2),
+                (base +  12 // 2, base  ),
+                (base + 12, base ),
+                 ])
 
     def _defstate(self):
         self.window.change_attributes(background_pixel = self.dgray)
         self.window.clear_area(0, 0, self.geom.width, self.geom.height)
         self.gc.change(foreground = self.ddgray)
-        #self.window.rectangle(self.gc, 0, 0, self.geom.width-1, self.geom.height-1)
-        self._textout();
+        self.draw_font(self.text, self.size[1]) #, 0, self.geom.height)
         self._checkout();
 
-    def _focstate(self):
+    def _enterstate(self):
         self.window.change_attributes(background_pixel=self.gray)
         self.window.clear_area(0, 0, self.geom.width-1, self.geom.height-1)
-        #self.gc.change(foreground = self.llgray)
-        #self.window.rectangle(self.gc, self.pressed, self.pressed,
-        #                        self.geom.width-1, self.geom.height-1)
-        self._textout();
+        self.draw_font(self.text, self.size[1])
         self._checkout();
-        #self.invalidate(self.window)
 
     def pevent(self, e):
         #print("in check event:", e)
@@ -202,7 +161,7 @@ class pCheck(BaseWindow):
             got = True
 
         if e.type == X.EnterNotify:
-            self._focstate()
+            self._enterstate()
             got = True
 
         if e.type == X.LeaveNotify:
@@ -217,7 +176,7 @@ class pCheck(BaseWindow):
             if self.callme:
                 self.callme(self)
             self.checked = not self.checked
-            self._focstate()
+            self._enterstate()
             self.invalidate(self.window)
             #print("check mouserelease", e, self.checked)
             got = True
@@ -234,6 +193,8 @@ class pCheck(BaseWindow):
 
 class pRadio(BaseWindow):
 
+    ''' Radio button '''
+
     def __init__(self, display, parent, text, xx, yy, callme=None, border=4):
 
         #print("pButton.__init__", display, parent, "text:", text,
@@ -255,7 +216,7 @@ class pRadio(BaseWindow):
         self.geom = self.window.get_geometry()
         self.gc.change(line_width=self.border)
         self.pressed = 0
-        self._focstate()
+        self._enterstate()
         self._textout()
 
     def _radioout(self):
@@ -274,12 +235,14 @@ class pRadio(BaseWindow):
             base = 2 * self.border # + 2
             self.window.fill_arc(self.gc,
                 self.geom.height // 4 + 4, self.geom.height // 4 + 4,
-                    2 * self.geom.height // 4 - 8, 2 * self.geom.height // 4 - 8,
+                    2 * self.geom.height // 4 - 8,
+                        2 * self.geom.height // 4 - 8,
                         0, 360 * 64)
 
     def _textout(self):
         self.gc.change(foreground = self.screen.black_pixel)
-        self.window.draw_text(self.gc, self.geom.height + 2 * self.border + self.pressed,
+        self.window.draw_text(self.gc,
+            self.geom.height + 2 * self.border + self.pressed,
                     self.te.font_ascent + 2 * self.border + self.pressed,
                          self.text)
 
@@ -287,11 +250,10 @@ class pRadio(BaseWindow):
         self.window.change_attributes(background_pixel = self.dgray)
         self.window.clear_area(0, 0, self.geom.width, self.geom.height)
         self.gc.change(foreground = self.ddgray)
-        #self.window.rectangle(self.gc, 0, 0, self.geom.width-1, self.geom.height-1)
         self._textout();
         self._checkout();
 
-    def _focstate(self):
+    def _enterstate(self):
         self.window.change_attributes(background_pixel=self.gray)
         self.window.clear_area(0, 0, self.geom.width-1, self.geom.height-1)
         #self.gc.change(foreground = self.llgray)
@@ -308,7 +270,7 @@ class pRadio(BaseWindow):
             got = True
 
         if e.type == X.EnterNotify:
-            self._focstate()
+            self._enterstate()
             got = True
 
         if e.type == X.LeaveNotify:
@@ -323,7 +285,7 @@ class pRadio(BaseWindow):
             if self.callme:
                 self.callme(self)
             self.checked = not self.checked
-            self._focstate()
+            self._enterstate()
             self.invalidate(self.window)
             #print("check mouserelease", e, self.checked)
             got = True

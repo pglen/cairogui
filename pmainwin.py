@@ -26,6 +26,28 @@ class MainWindow(BaseWindow):
         #self.window.fill_arc(self.gc, 30, 30, 20, 20, 10, 100 )
         #self.window.rectangle(self.gc, 50, 50, 20, 20)
 
+# Set some WM info
+        #self.WM_PROTOCOLS = self.d.intern_atom('WM_PROTOCOLS')
+
+        self.window.set_wm_name('Xlib example: window.py')
+        #self.window.set_wm_icon_name('draw.py')
+        #self.window.set_wm_class('Example', 'XlibExample')
+
+        self.WM_DELETE_WINDOW = self.d.intern_atom('WM_DELETE_WINDOW')
+        self.window.set_wm_protocols([self.WM_DELETE_WINDOW])
+        self.window.set_wm_hints(flags = Xutil.StateHint,
+                                 initial_state = Xutil.NormalState)
+
+        #self.window.set_wm_normal_hints(flags = (Xutil.PPosition | Xutil.PSize
+        #                                         | Xutil.PMinSize),
+        #                                min_width = 20,
+        #                                min_height = 20)
+
+        #print(self.window.list_properties())
+
+        # Map the window, making it visible
+        #self.geom = self.window.get_geometry()
+
     def add_widget(self,widget):
         self.children.append(widget)
 
@@ -42,7 +64,8 @@ class MainWindow(BaseWindow):
             if e.type == X.ButtonPress:
                 if self.d.get_input_focus().focus != e.window:
                     e.window.set_input_focus(X.RevertToParent, X.CurrentTime )
-                    #print("focus change:", self.d.get_input_focus().focus, "child:", e.window)
+                    #print("focus change:", self.d.get_input_focus().focus,
+                    #       "child:", e.window)
             for aa in self.children:
                 if e.window == aa.window :
                     processed = aa.pevent(e)
@@ -114,7 +137,8 @@ class MainWindow(BaseWindow):
 
             if e.type == X.KeyPress:
                 #print("main keypress: ", dir(e), e._data)
-                if  e.state & X.Mod1Mask and e.detail ==  self.d.keysym_to_keycode(XK_x):
+                if  e.state & X.Mod1Mask and e.detail == \
+                     self.d.keysym_to_keycode(XK_x):
                     print("ALT_X")
                     ret = True
                     #sys.exit(0)

@@ -36,34 +36,38 @@ class Makefont(object):
 
     ''' Create common font object for all widgets '''
 
-    def __init__(self, fontname, size):
+    def __init__(self, fontname, size, args = None):
 
         self.font = None ; self.te = None
         cnt = 0
 
-        #global gl_font
-        #if gl_font:
-        #    self = gl_font
-        #    return
+        # Try command line font first
+        try:
+            fname = fontname
+            self.font = ImageFont.truetype(fontname, size=size)
+        except: pass
 
-        while True:
-            fontname = fontx[cnt]
-            if not fontname:
-                break
-            try:
-                #print("Try:", fontname)
-                self.font = ImageFont.truetype(fontname, size=size)
-            except:
-                #print(sys.exc_info())
-                pass
-            if self.font:
-                break
-            cnt += 1
-            if cnt >= len(fontx):
-                break
+        if not self.font:
+            while True:
+                fname = fontx[cnt]
+                if not fname:
+                    break
+                try:
+                    #print("Try:", fontname)
+                    self.font = ImageFont.truetype(fname, size=size)
+                except:
+                    #print(sys.exc_info())
+                    pass
+                if self.font:
+                    break
+                cnt += 1
+                if cnt >= len(fontx):
+                    break
         if not self.font:
             raise OSError("No font found. Tried: %s" % str(fontx))
         self.te   = self.font.getmetrics()
+        if args.verbose:
+            print("Got font:", fname)
         gl_font = self
 
     def get_size(self, text):
@@ -85,19 +89,19 @@ class pConfig(object):
     def __init__(self, disp, window):
         self.display = disp
         self.parent = window
-        self.font_name = pConfig._font_name
-        self.font_size = pConfig._font_size
+        self.font_name = ""  #pConfig._font_name
+        self.font_size = 18 #pConfig._font_size
         self.border  = pConfig._border
-        self.text  = ""
-        self.x  = 0
-        self.y  = 0
+        self.text  = "Empty"
+        self.xx  = 0
+        self.yy  = 0
         self.www = 10
         self.hhh = 10
         self.callme = None
 
     def __str__(self):
-        return "font='%s' x=%d y=%d www=%d hhh=%d" % \
-                (self.font_name, self.x, self.y, self.www, self.hhh)
+        return "font='%s' xx=%d yy=%d www=%d hhh=%d" % \
+                (self.font_name, self.xx, self.yy, self.www, self.hhh)
 
 event_maskx =  (
         X.ExposureMask | X.StructureNotifyMask | X.SubstructureNotifyMask |
@@ -155,7 +159,6 @@ class BaseWindow(object):
             background_pixel = self.gray, #screen.white_pixel,
             event_mask = event_maskx,
             colormap = X.CopyFromParent,
-            #keys = {'backing_store': X.NotUseful, 'all_event_masks': 1980679760, }
             )
 
         self.gc = self.window.create_gc(
@@ -170,38 +173,8 @@ class BaseWindow(object):
             #join_style=X.JoinBevel
             )
 
-        #self.gc.change(line_width=5)
-        #self.window.change_attributes(border_pixel=self.dgray, border_width=5) # Set border to red and 5 pixels wide
-        #self.d.flush()
-        #print(self.window.get_attributes())
-
-        #self.window.change_attributes(event_mask=event_maskx)
-        #self.window.change_attributes(backing_store=0)
-        #ext.shape.select_input(self.d, True)
-
-        # Set some WM info
-        self.WM_PROTOCOLS = self.d.intern_atom('WM_PROTOCOLS')
-
-        self.window.set_wm_name('Xlib example: window.py')
-        #self.window.set_wm_icon_name('draw.py')
-        #self.window.set_wm_class('Example', 'XlibExample')
-
-        self.WM_DELETE_WINDOW = self.d.intern_atom('WM_DELETE_WINDOW')
-        self.window.set_wm_protocols([self.WM_DELETE_WINDOW])
-        self.window.set_wm_hints(flags = Xutil.StateHint,
-                                 initial_state = Xutil.NormalState)
-
-        #self.window.set_wm_normal_hints(flags = (Xutil.PPosition | Xutil.PSize
-        #                                         | Xutil.PMinSize),
-        #                                min_width = 20,
-        #                                min_height = 20)
-
-        #print(self.window.list_properties())
-
-        # Map the window, making it visible
-        #self.geom = self.window.get_geometry()
         self.window.map()
-        self.geom = self.window.get_geometry()
+        #self.geom = self.window.get_geometry()
         #print("geom", self.geom)
 
     def invalidate(self, window = None):
@@ -217,4 +190,24 @@ class BaseWindow(object):
         # Send the event to the window
         window.send_event(event, propagate=False)
         #Xlib.display.flush()
+
+    def draw_foc(self):
+
+        if self.d.get_input_focus().focus == self.window:
+            self.gc.change(line_style=X.LineOnOffDash)
+        else:
+            self.gc.change(line_style=X.LineSolid)
+        self.window.rectangle(self.gc, 0, 0,
+                        self.geom.width-1, self.geom.height-1)
+
+    def draw_font(self, text, offsx = 0, offsy = 0):
+
+        ''' Draw proportional font ; clear background '''
+
+        self.draw.rectangle((0, 0, self.size[0], self.size[1]), self.gray)
+        self.draw.text((self.pressed + offsx, self.pressed + offsy), text, fill="black",
+                                font=self.font.font, anchor="la")
+        self.window.put_pil_image(self.gc,
+                                    self.config.border, self.config.border,
+                                            self.image)
 
