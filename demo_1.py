@@ -1,56 +1,107 @@
 #!/usr/bin/python
 
 import  sys, time
-import argparse
+import  argparse
+import  threading
 
-#sys.path.append("python_xlib")
+# Try local Xlib copy from source (worked the same)
+sys.path = ["python_xlib",] + sys.path
 
-import  Xlib
-from    Xlib import display, Xutil, ext
+from    Xlib import X, display, Xutil, ext
 from    Xlib.keysymdef.latin1 import *
 
-from pwidgets import pCheck, pLabel, pButton, MainWindow
+print("file:", X.__file__)
 
-def args():
+#pLabel,
+
+from pwidgets import pConfig, pRadio, pCheck
+from pwidgets import pButton, MainWindow
+from ptext import pText
+
+def argsfunc():
     # Add argument parsing
-    parser = argparse.ArgumentParser(description='Display text using X11')
+    parser = argparse.ArgumentParser(description='GUI toolkit')
+    parser.add_argument('-v', '--verbose', action="store_true", help='Verbosity level')
     parser.add_argument('--text', help='Text to display')
     parser.add_argument('--fg-color', default='white',
                        help='Text color (white/black or hex color like #FFBB00)')
     parser.add_argument('--bg-color', default='black',
                        help='Background color (white/black or hex color like #000000)')
-    parser.add_argument('--font', type=str,
-                       default='-misc-fixed-medium-r-normal--13-120-75-75-c-70-iso8859-1',
-                       help='X11 font name')
+    parser.add_argument('--fontname', type=str,
+                       default='DejaVuSans',
+                       help='Font name')
+    parser.add_argument('--fontsize', type=int,
+                       default=18,
+                       help='Font size')
+    parser.add_argument('--width', type=int,
+                       default=400,
+                       help='Window size')
+    parser.add_argument('--height', type=int,
+                       default=300,
+                       help='Window size')
     args = parser.parse_args()
+    return args
+
+def callb(butt, delay=1):
+    print("Button thread pressed", butt.text)
+    #time.sleep(delay)
+    #print("Button thread pressed done", butt.text)
+    pass
 
 def callme(butt):
-    print("Button pressed", butt.text)
+    #t = threading.Thread(target=callb, args=(butt,), kwargs={"delay": 2})
+    #t.start()
+    print("Button pressed done", butt.text)
+
+#pconfig = pConfig()
 
 class mainwin(MainWindow):
 
-    def __init__(self, disp, xx, yy, width, height):
-        super().__init__(disp, disp.screen().root, xx, yy, width, width)
+    def __init__(self, disp, xx, yy, width, height, args):
 
-        basex = width//4 ; basey = 32
+        config = pConfig(disp, disp.screen().root)
+        config.xx = config.yy = 0
+        config.www = width ; config.hhh = height
+        config.text = "Main "
+
+        super().__init__(config, args)
+
+        #child = pLabel(self.d, self.window, "Hello Label:", 6, 6)
+        #self.add_widget(child)
+
+        basex = 24 ; basey = 32
         ttt = b"Button %d Widget"
         child = None
+        offs = 8
+
+        config = pConfig(disp, self.window)
+        config.xx = basex ; config.yy = 22
+        config.www = 250  ; config.hhh = 150
+        config.text = "Button "
 
         # Add buttons
-        for aa in range(4):
-            if not child:
-                offs = 0
-            else:
-                offs = (child.geom.height + 4) * aa
-            child = pButton(self.d, self.window, ttt % aa, basex,
-                                basey + offs, callme)
+        for aa in range(2):
+            if child:
+                offs = (child.geom.height + 14) * (aa )
+            child = pButton(config, args)
             self.add_widget(child)
 
-        child = pLabel(self.d, self.window, "Hello Label:", 4, 4)
-        self.add_widget(child)
-
-        child = pCheck(self.d, self.window, "Check Label", basex, 200)
-        self.add_widget(child)
+        #child = pCheck(self.d, self.window, "Check button", basex, 130, callme)
+        #self.add_widget(child)
+        #
+        #child = pRadio(self.d, self.window, "Radio button",  basex, 170, callme)
+        #self.add_widget(child)
+        #
+        #config = pConfig()
+        #config.parent = self.window
+        #config.xx = basex
+        #config.yy = 220
+        #config.www = 250
+        #config.hhh = 150
+        #config.text = "Text Editor"
+        #
+        #child = pText(self.d, config)
+        #self.add_widget(child)
 
     def winloop(self):
         #print("Winloop")
@@ -63,7 +114,7 @@ class mainwin(MainWindow):
         print("Exited loop.")
 
 # Define window dimensions and position
-x, y, width, height = 100, 100, 300, 200
+x, y = 100, 100;
 
 if __name__ == "__main__":
 
@@ -74,7 +125,18 @@ if __name__ == "__main__":
         print("Cannot open display.")
         sys.exit(1)
 
-    win = mainwin(disp, x, y, width, height)
+    args = argsfunc()
+
+    #print("exts", self.d.list_extensions())
+    # Add fonts
+    #old = disp.get_font_path()
+    #old.append("/usr/share/fonts/X11/100dpi")
+    #print("old font:", old)
+    #disp.set_font_path(old)
+    #newp = disp.get_font_path()
+    #print("new font:", newp)
+
+    win = mainwin(disp, x, y, args.width, args.height, args)
     win.winloop()
     # Close the display connection
     disp.close()
