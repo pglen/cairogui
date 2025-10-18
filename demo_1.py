@@ -113,6 +113,7 @@ class mainwin(MainWindow):
         config.font_size = args.fontsize
         config.font_name = args.fontname
         config.text = "Label box:"
+        config.nofocus = True
         config.checked = True
         config.callme = checkchange
         config.xx = basex

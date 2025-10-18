@@ -106,6 +106,7 @@ class pConfig(object):
         self.callme = None
         self.name = "UnNamed"
         self.checked = True
+        self.nofocus = False
 
     def __str__(self):
         return "font='%s' xx=%d yy=%d www=%d hhh=%d" % \
@@ -180,7 +181,6 @@ class BaseWindow(object):
             #join_style=X.JoinRound
             #join_style=X.JoinBevel
             )
-
         self.window.map()
         #self.geom = self.window.get_geometry()
         #print("geom", self.geom)
@@ -203,10 +203,15 @@ class BaseWindow(object):
 
         if self.d.get_input_focus().focus == self.window:
             self.gc.change(line_style=X.LineOnOffDash)
+            self.gc.change(foreground = self.ddgray)
         else:
             self.gc.change(line_style=X.LineSolid)
+            self.gc.change(foreground = self.gray)
+
         self.window.rectangle(self.gc, 0, 0,
                         self.geom.width-1, self.geom.height-1)
+        self.gc.change(line_style=X.LineSolid)
+        self.gc.change(foreground = self.gray)
 
 class   KeyState(object):
 

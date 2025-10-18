@@ -119,6 +119,8 @@ class MainWindow(BaseWindow):
 
     def keyhandler(self, e):
 
+        ''' Form keys '''
+
         if e.type == X.KeyPress:
             keysym = self.d.keycode_to_keysym(e.detail, 0)
             was = self.keyh.handle_modkey(e, keysym)
@@ -126,12 +128,46 @@ class MainWindow(BaseWindow):
                 print("state:", hex(e.state), "key:", hex(keysym), str(self.keyh))
 
             if  self.keyh.alt and keysym == XK_x:
-                print("ALT_X")
+                #print("ALT_X")
                 ret = True
                 sys.exit(0)
 
             if  keysym == XK_Tab:
-                print("tab")
+                #print("tab")
+                oldfoc = 0
+                for cnt, aa in enumerate(self.children):
+                    if self.d.get_input_focus().focus == aa.window:
+                        #print("focus", aa.window)
+                        oldfoc = aa
+                        break
+                if not oldfoc:
+                    #print("was NO oldfoc")
+                    cnt = 0
+                else:
+                    #print("was oldfoc", cnt)
+                    if self.keyh.shift:
+                        cnt -= 1
+                    else:
+                        cnt += 1
+
+                # Cycle to previous / next
+                for _ in range(len(self.children)):
+                    if cnt < 0:         # Wrap around
+                        cnt = 0
+                    if cnt >= len(self.children):
+                        cnt = 0
+                    if self.children[cnt].config.nofocus:
+                        #print("skip", self.children[cnt].config.text)
+                        if self.keyh.shift:
+                            cnt -= 1
+                        else:
+                            cnt += 1
+                # Cy
+                    else:
+                        break
+
+                self.children[cnt].window.set_input_focus \
+                                (X.RevertToParent, X.CurrentTime )
 
         if e.type == X.KeyRelease:
             #print("main keyrelease", e, e.detail)
