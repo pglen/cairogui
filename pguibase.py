@@ -99,18 +99,19 @@ class pConfig(object):
         self.font_size = 18 #pConfig._font_size
         self.border  = pConfig._border
         self.text  = "Empty"
-        self.xx  = 0
-        self.yy  = 0
-        self.www = 10
-        self.hhh = 10
+        self.xx  = 2
+        self.yy  = 2
+        self.www = 20
+        self.hhh = 20
         self.callme = None
         self.name = "UnNamed"
         self.checked = True
         self.nofocus = False
 
     def __str__(self):
-        return "font='%s' xx=%d yy=%d www=%d hhh=%d" % \
-                (self.font_name, self.xx, self.yy, self.www, self.hhh)
+        return "font='%s' xx=%d yy=%d www=%d hhh=%d text='%s'" % \
+                (self.font_name, self.xx, self.yy,
+                    self.www, self.hhh, self.text)
 
 event_maskx =  (
         X.ExposureMask | X.StructureNotifyMask | X.SubstructureNotifyMask |
@@ -182,7 +183,7 @@ class BaseWindow(object):
             #join_style=X.JoinBevel
             )
         self.window.map()
-        #self.geom = self.window.get_geometry()
+        self.geom = self.window.get_geometry()
         #print("geom", self.geom)
 
     def invalidate(self, window = None):
@@ -285,5 +286,6 @@ class   KeyState(object):
                 self.super = False ;  was = True
 
         return was
+
 
 # EOF

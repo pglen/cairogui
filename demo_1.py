@@ -83,6 +83,7 @@ class mainwin(MainWindow):
             child = pButton(config, args)
             basey += child.geom.height + 4
             self.add_widget(child)
+            #print("config:", config)
 
         # Add check
         config = pConfig(disp, self.window)

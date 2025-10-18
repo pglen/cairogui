@@ -11,16 +11,68 @@ from PIL import Image, ImageDraw, ImageFont
 
 from pguibase import BaseWindow, Makefont, pConfig, KeyState
 
+def tooltip(oconf, args, e):
+
+    print("tooltip", e)
+    config = pConfig(oconf.display, oconf.display.screen().root)
+    config.font_size = max(args.fontsize // 2, 14)
+    config.font_name = args.fontname
+    config.text = " Tooltip Here " + oconf.text * 3
+    #config.nofocus = True
+    #config.checked = True
+    #config.callme = checkchange
+    config.xx = oconf.xx + 4
+    config.yy = oconf.yy + 4
+    config.border = 6
+    child = pLabel(config, args)
+    #child.window.set_wm_hints(flags = Xutil.StateHint,
+    #                             initial_state = Xutil.NormalState)
+    #child.window.set_wm_normal_hints(
+	#		flags=(Xutil.PPosition | Xutil.PSize | Xutil.PMinSize),
+	#		min_width=50,
+	#		min_height=50
+	#		)
+
+    # Get atoms for window types and states
+    wm_window_type = disp.intern_atom('_NET_WM_WINDOW_TYPE')
+    wm_window_type_utility = disp.intern_atom('_NET_WM_WINDOW_TYPE_UTILITY') # For tool windows
+    wm_state = disp.intern_atom('_NET_WM_STATE')
+    wm_state_above = disp.intern_atom('_NET_WM_STATE_ABOVE') # To keep it on top
+    wm_state_skip_taskbar = disp.intern_atom('_NET_WM_STATE_SKIP_TASKBAR') # To hide from taskbar
+
+    # Set the window type to utility (tool window)
+    child.window.change_property(
+        wm_window_type,
+        Xatom.ATOM,
+        32, # 32-bit property
+        [wm_window_type_utility]
+    )
+
+    # Set window state to "above" and "skip taskbar"
+    child.window.change_property(
+        wm_state,
+        Xatom.ATOM,
+        32,
+        [wm_state_above, wm_state_skip_taskbar]
+    )
+
+
+    return child
+
 class pButton(BaseWindow):
 
     def __init__(self, config, args = None):
 
         if args.verbose:
             print("pButton.__init__", config)
+
+        self.keyh = KeyState()
         self.pressed = 0
         self.config  = config
+        self.args  = args
         self.font = Makefont(config.font_name, config.font_size, args)
         self.size = self.font.get_size(self.config.text)
+        self.toolwin = None
         config.www, config.hhh = self.size
         config.www += 2 * config.border
         config.hhh += 2 * config.border
@@ -39,21 +91,18 @@ class pButton(BaseWindow):
         self.draw.rectangle((0, 0, self.size[0], self.size[1]), self.gray)
         self.draw.text((self.pressed + offsx, self.pressed + offsy), text, fill="black",
                                 font=self.font.font, anchor="la")
-        self.window.put_pil_image(self.gc,
-                                    self.config.border, self.config.border,
+        self.window.put_pil_image(self.gc, self.config.border, self.config.border,
                                             self.image)
     def _defstate(self):
         self.window.change_attributes(background_pixel = self.dgray)
         self.window.clear_area(0, 0, self.geom.width, self.geom.height)
         self.draw_font(self.config.text)
-        #self.gc.change(foreground = self.ddgray)
         self.draw_foc()
 
     def _enterstate(self):
         self.window.change_attributes(background_pixel=self.lgray)
         self.window.clear_area(0, 0, self.geom.width-1, self.geom.height-1)
         self.draw_font(self.config.text)
-        #self.gc.change(foreground = self.llgray)
         self.draw_foc()
 
     def pevent(self, e):
@@ -61,43 +110,62 @@ class pButton(BaseWindow):
         got = 0
         if e.type == X.CreateNotify:
             got = True
-
         if e.type == X.EnterNotify:
             self._enterstate()
             got = True
-
         if e.type == X.LeaveNotify:
+            #if self.toolwin:
+            #    print("close", self.toolwin.window)
+            #    self.toolwin.window.destroy()
+            #    self.toolwin = False
             self._defstate()
             got = True
-
         if e.type == X.FocusIn:
-            #print("ptext focusIn", e)
             self._defstate()
             got = True
-
         if e.type == X.FocusOut:
-            #print("ptext focusOut", e)
+            #self.toolwin.window.destroy()
+            #self.toolwin = False
             self._defstate()
             got = True
-
         if e.type == X.ButtonPress:
-            self.pressed = 1
-            self._enterstate()
-            #print("pbutt mousepress", e)
+            #print("pbutt", e)
+            if e.detail == 1:
+                self.pressed = 1
+                self._enterstate()
+            if e.detail == 3:
+                #print("pbutt R mousepress", e)
+                if self.toolwin:
+                    self.toolwin.window.destroy()
+                self.toolwin = tooltip(self.config, self.args, e)
 
+            got = True
         if e.type == X.ButtonRelease:
-            self.pressed = 0
-            self._enterstate()
-            #print("pbutt mouserelease", e)
-            if self.config.callme:
-                self.config.callme(self)
+            #print("pbutt", e)
+            if e.detail == 1:
+                self.pressed = 0
+                self._defstate()
+                if self.config.callme:
+                    self.config.callme(self)
+            got = True
 
         if e.type == X.KeyPress:
-            #print("pbutt keypress", e)
+            keysym = self.d.keycode_to_keysym(e.detail, 0)
+            was = self.keyh.handle_modkey(e, keysym)
+            if keysym == XK_space:
+                self.pressed = 1
+                self.config.checked = not self.config.checked
+                self._defstate()
             got = True
 
         if e.type == X.KeyRelease:
-            #print("pbutt keyrelease", e)
+            keysym = self.d.keycode_to_keysym(e.detail, 0)
+            was = self.keyh.handle_modkey(e, keysym)
+            if keysym == XK_space:
+                self.pressed = 0
+                self._defstate()
+                if self.config.callme:
+                    self.config.callme(self)
             got = True
 
         return got
@@ -322,6 +390,8 @@ class pRadio(BaseWindow):
                 print("checked", self.config.checked)
                 self.config.checked = not self.config.checked
                 self._defstate()
+                if self.config.callme:
+                    self.config.callme(self)
             got = True
 
         if e.type == X.KeyRelease:
@@ -400,5 +470,9 @@ class pLabel(BaseWindow):
             got = True
 
         return got
+
+class   Tooltip(BaseWindow):
+        pass
+
 
 # EOF

@@ -44,37 +44,39 @@ class MainWindow(BaseWindow):
         #                                         | Xutil.PMinSize),
         #                                min_width = 20,
         #                                min_height = 20)
-
-        #print(self.window.list_properties())
-
-        # Map the window, making it visible
         #self.geom = self.window.get_geometry()
 
     def add_widget(self,widget):
         self.children.append(widget)
 
-    # Main loop, handling events
-    def defloop(self):
-        while 1:
-            e = self.d.next_event()
-            ret = self.defproc()
-            if ret:
-                break
-
     def defproc(self, e):
+        #print("main:", e)
         ret = False
-        while 1:
+        if 1: #while 1:
             if e.type == X.ButtonPress:
                 if self.d.get_input_focus().focus != e.window:
                     e.window.set_input_focus(X.RevertToParent, X.CurrentTime )
                     #print("focus change:", self.d.get_input_focus().focus,
                     #       "child:", e.window)
+
+            # Main window has been destroyed, quit
+            if e.type == X.DestroyNotify:
+                print("Exit destroy", e) #, self.window)
+                if e.window == self.window:
+                    #sys.exit(0)
+                    ret = True
+
             for aa in self.children:
-                if e.window == aa.window :
-                    processed = aa.pevent(e)
-                    #print("ret:", ret)
-                    if processed:
-                        continue
+                try:
+                    if e.window == aa.window :
+                        processed = aa.pevent(e)
+                        #print("ret:", ret)
+                        if processed:
+                            continue
+                except:
+                    pass
+                    #print("ch", sys.exc_info())
+            #print("after children:", len(self.children))
 
             if e.type == X.MotionNotify:
                 #print("Motion", end = " ")
@@ -87,20 +89,13 @@ class MainWindow(BaseWindow):
                 if e.client_type == self.WM_PROTOCOLS:
                     fmt, data = e.data
                     if fmt == 32 and data[0] == self.WM_DELETE_WINDOW:
-                        #print("Exit client prot")
+                        print("Exit client prot")
+                        sys.exit(0)
                         ret = True
-                        break
-                        #sys.exit(0)
-
-            # Window has been destroyed, quit
-            if e.type == X.DestroyNotify:
-                print("Exit destoy")
-                ret = True
-                break
-                #sys.exit(0)
+                        #break
 
             # Left button pressed, start to draw
-            if e.type == X.ButtonPress and e.detail == 1:
+            if e.type == X.ButtonPress:
                 pass
 
             # Left button released, finish drawing
@@ -113,7 +108,7 @@ class MainWindow(BaseWindow):
 
             ret = self.keyhandler(e)
 
-            break
+            #break
 
         return ret
 
