@@ -4,12 +4,13 @@ import  sys, time
 
 ''' Main window '''
 
-from    Xlib import X, display, Xutil, ext, protocol
+from    Xlib import X, display, Xutil, ext, protocol, XK
 from    Xlib.keysymdef.latin1 import *
+from    Xlib.keysymdef.miscellany import *
 
 from PIL import Image, ImageDraw, ImageFont
 
-from pguibase import BaseWindow, Makefont, pConfig
+from pguibase import BaseWindow, Makefont, pConfig, KeyState
 
 class MainWindow(BaseWindow):
 
@@ -19,6 +20,7 @@ class MainWindow(BaseWindow):
 
         super().__init__(config, args)
         self.children = []
+        self.keyh = KeyState()
 
         #print("args", self.args)
 
@@ -26,10 +28,10 @@ class MainWindow(BaseWindow):
         #self.window.fill_arc(self.gc, 30, 30, 20, 20, 10, 100 )
         #self.window.rectangle(self.gc, 50, 50, 20, 20)
 
-# Set some WM info
-        #self.WM_PROTOCOLS = self.d.intern_atom('WM_PROTOCOLS')
+        # Set some WM info
+        self.WM_PROTOCOLS = self.d.intern_atom('WM_PROTOCOLS')
 
-        self.window.set_wm_name('Xlib example: window.py')
+        self.window.set_wm_name(config.name)
         #self.window.set_wm_icon_name('draw.py')
         #self.window.set_wm_class('Example', 'XlibExample')
 
@@ -53,13 +55,14 @@ class MainWindow(BaseWindow):
 
     # Main loop, handling events
     def defloop(self):
-        current = None
         while 1:
             e = self.d.next_event()
-            self.defproc()
+            ret = self.defproc()
+            if ret:
+                break
 
     def defproc(self, e):
-        current = None ; ret = False
+        ret = False
         while 1:
             if e.type == X.ButtonPress:
                 if self.d.get_input_focus().focus != e.window:
@@ -91,60 +94,51 @@ class MainWindow(BaseWindow):
 
             # Window has been destroyed, quit
             if e.type == X.DestroyNotify:
-                print("Exit dest")
+                print("Exit destoy")
                 ret = True
                 break
                 #sys.exit(0)
 
-            #continue
-
-            # Some part of the window has been exposed,
-            # redraw all the objects.
-            if e.type == X.Expose:
-                pass
-                #if e.count == 0:
-                #    self.window.fill_rectangle(self.gc, 0, 0, 60, 60)
-
-                #self.gc.change(line_width=3)
-                #self.window.arc(self.gc, 30, 30, 20, 20, 0, 360 * 64 )
-                #self.window.rectangle(self.gc, 50, 50, 20, 20)
-                #
-                #print("****Expose", e)
-                #for oo in self.objects:
-                #    oo.expose(e)
-                #for tt in self.texts:
-                #    print(tt)
-
             # Left button pressed, start to draw
             if e.type == X.ButtonPress and e.detail == 1:
                 pass
-                #self.gc.change(foreground = self.screen.black_pixel)
-                #self.window.draw_text(self.gc, 10, 10, b"Hello, world!")
-                #self.window.poly_line(self.gc, X.CoordModeOrigin,
-                #                [(20, 20), (100, 100), (120, 150)], )
-                #self.invalidate(self.window)
 
             # Left button released, finish drawing
-            if e.type == X.ButtonRelease and e.detail == 1 and current:
+            if e.type == X.ButtonRelease:
                 pass
-                #current.finish(e)
-                #current = None
 
             # Mouse movement with button pressed, draw
-            if e.type == X.MotionNotify and current:
-                #current.motion(e)
+            if e.type == X.MotionNotify:
                 pass
 
-            if e.type == X.KeyPress:
-                #print("main keypress: ", dir(e), e._data)
-                if  e.state & X.Mod1Mask and e.detail == \
-                     self.d.keysym_to_keycode(XK_x):
-                    print("ALT_X")
-                    ret = True
-                    #sys.exit(0)
+            ret = self.keyhandler(e)
 
-            if e.type == X.KeyRelease:
-                print("main keyrelease", e)
             break
+
         return ret
 
+    def keyhandler(self, e):
+
+        if e.type == X.KeyPress:
+            keysym = self.d.keycode_to_keysym(e.detail, 0)
+            was = self.keyh.handle_modkey(e, keysym)
+            if not was:
+                print("state:", hex(e.state), "key:", hex(keysym), str(self.keyh))
+
+            if  self.keyh.alt and keysym == XK_x:
+                print("ALT_X")
+                ret = True
+                sys.exit(0)
+
+            if  keysym == XK_Tab:
+                print("tab")
+
+        if e.type == X.KeyRelease:
+            #print("main keyrelease", e, e.detail)
+            keysym = self.d.keycode_to_keysym(e.detail, 0) #e.state & 0x1)
+            was = self.keyh.handle_modkey(e, keysym)
+            if not was:
+                print("rele", hex(keysym), str(self.keyh))
+
+
+# EOF

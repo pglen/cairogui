@@ -6,6 +6,7 @@ import  sys, time
 
 from    Xlib import X, display, Xutil, ext, protocol
 from    Xlib.keysymdef.latin1 import *
+from    Xlib.keysymdef.miscellany import *
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -34,7 +35,7 @@ fontx = (   "OpenSans-Regular", "DejaVuSans", "Verdana", "Arial",
 
 class Makefont(object):
 
-    ''' Create common font object for all widgets '''
+    ''' Create common font object for all widgets, measure it '''
 
     def __init__(self, fontname, size, args = None):
 
@@ -78,6 +79,11 @@ class Makefont(object):
         fake_width, fake_height = self.font.getsize("Ag")
         return font_width, fake_height
 
+    def get_realsize(self, text):
+
+        font_width, font_height = self.font.getsize(text)
+        return font_width, font_height
+
 class pConfig(object):
 
     ''' Configuration to pass to display elements '''
@@ -98,6 +104,8 @@ class pConfig(object):
         self.www = 10
         self.hhh = 10
         self.callme = None
+        self.name = "UnNamed"
+        self.checked = True
 
     def __str__(self):
         return "font='%s' xx=%d yy=%d www=%d hhh=%d" % \
@@ -200,14 +208,77 @@ class BaseWindow(object):
         self.window.rectangle(self.gc, 0, 0,
                         self.geom.width-1, self.geom.height-1)
 
-    def draw_font(self, text, offsx = 0, offsy = 0):
+class   KeyState(object):
 
-        ''' Draw proportional font ; clear background '''
+    def __init__(self):
 
-        self.draw.rectangle((0, 0, self.size[0], self.size[1]), self.gray)
-        self.draw.text((self.pressed + offsx, self.pressed + offsy), text, fill="black",
-                                font=self.font.font, anchor="la")
-        self.window.put_pil_image(self.gc,
-                                    self.config.border, self.config.border,
-                                            self.image)
+        self.shift = False;
+        self.ctrl = False;
+        self.alt = False;
 
+        self.lshift = False;
+        self.rshift = False;
+        self.lctrl = False;
+        self.rctrl = False;
+        self.lalt = False;
+        self.ralt = False;
+
+        self.caps = False;
+        self.super = False;
+
+    def __str__(self):
+
+        return  " shift:"  + str(self.shift) + \
+                " ctrl:"   + str(self.ctrl) + \
+                " alt:"    + str(self.alt) + \
+                " super:"  + str(self.super)
+
+                # rshift:" + str(self.rshift) + \
+                #" rctrl:"  + str(self.rctrl) + \
+                #" ralt:"   + str(self.ralt)
+
+    def handle_modkey(self, e, keysym):
+
+        #print("modkey:", hex(keysym))
+        was = 0
+        if e.type == 2:
+            if keysym == XK_Alt_L:
+                self.alt = True ;  self.lalt = True ; was = True
+            if keysym == XK_Alt_R:
+                self.alt = True ;  self.ralt = True ;  was = True
+            if keysym == XK_Control_L:
+                self.ctrl = True ;  self.lctrl = True ; was = True
+            if keysym == XK_Control_R:
+                self.ctrl = True ;  self.rctrl = True ; was = True
+            if keysym == XK_Shift_L:
+                self.shift = True ;  self.rshift = True ; was = True
+            if keysym == XK_Shift_R:
+                self.shift = True ;  self.rshift = True ; was = True
+            if keysym == XK_Super_L:
+                self.super = True ;  was = True
+            if keysym == XK_Super_R:
+                self.super = True ;  was = True
+
+            if keysym == XK_Caps_Lock:
+                self.caps = not self.caps
+                self.shift = self.caps ;
+
+        if e.type == 3:
+            if keysym == XK_Alt_L:
+                self.alt = False ; self.lalt = False ; was = True
+            if keysym == XK_Alt_R:
+                self.alt = False ; self.ralt = False ; was = True
+            if keysym == XK_Control_L:
+                self.ctrl = False;  self.lctrl = False  ;  was = True
+            if keysym == XK_Control_R:
+                self.ctrl = False;  self.rctrl = False ;  was = True
+            if keysym == XK_Shift_L:
+                self.shift = False;  self.lshift = False ;  was = True
+            if keysym == XK_Shift_R:
+                self.shift = False;  self.rshift = False ;  was = True
+            if keysym == XK_Super_L:
+                self.super = False ;  was = True
+
+        return was
+
+# EOF

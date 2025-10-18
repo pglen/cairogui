@@ -13,7 +13,7 @@ from    Xlib.keysymdef.latin1 import *
 #print("file:", X.__file__)
 
 from pguibase import BaseWindow, pConfig
-from pwidgets import pConfig, pRadio, pCheck, pButton
+from pwidgets import pConfig, pRadio, pCheck, pButton, pLabel
 from pmainwin import MainWindow
 from ptext import pText
 
@@ -33,10 +33,10 @@ def argsfunc():
                        default=18,
                        help='Font size')
     parser.add_argument('--width', type=int,
-                       default=500,
+                       default=640,
                        help='Window size')
     parser.add_argument('--height', type=int,
-                       default=400,
+                       default=512,
                        help='Window size')
     args = parser.parse_args()
     return args
@@ -50,9 +50,10 @@ def callb(butt, delay=1):
 def callme(butt):
     #t = threading.Thread(target=callb, args=(butt,), kwargs={"delay": 2})
     #t.start()
-    print("Button pressed done", butt.text)
+    print("Button pressed done:", butt.config.text)
 
-#pconfig = pConfig()
+def checkchange(butt):
+    print("Checkbox pressed done:", butt.config.text, butt.config.checked)
 
 class mainwin(MainWindow):
 
@@ -62,52 +63,63 @@ class mainwin(MainWindow):
         config.xx = config.yy = 10
         config.www = width ; config.hhh = height
         config.text = "Main "
+        config.name = " Demo_1"
 
         super().__init__(config, args)
 
         #child = pLabel(self.d, self.window, "Hello Label:", 6, 6)
         #self.add_widget(child)
-
         basex = 24 ; basey = 32
-        child = None
-        offs = 8
-        config = pConfig(disp, self.window)
-        config.xx = basex ; config.yy = 22
-        config.www = 250  ; config.hhh = 150
-        config.font_size = args.fontsize
-        config.font_name = args.fontname
-
         # Add buttons
-        for aa in range(2):
+        for aa in range(4):
+            config = pConfig(disp, self.window)
+            config.xx = basex
+            config.www = 250  ; config.hhh = 150
+            config.font_size = args.fontsize
+            config.font_name = args.fontname
+            config.callme = callme
             config.text = "Button %d Here" % (aa + 1)
-            if child:
-                #offs = (child.geom.height + 14) * (aa )
-                config.yy += child.geom.height + 6
+            config.yy = basey
             child = pButton(config, args)
+            basey += child.geom.height + 4
             self.add_widget(child)
 
-        config2 = pConfig(disp, self.window)
-        config2.font_size = args.fontsize
-        config2.font_name = args.fontname
-        config2.text = "Checkbox"
-        config2.xx = basex ; config2.yy = 170
-        child = pCheck(config2, args)
+        # Add check
+        config = pConfig(disp, self.window)
+        config.font_size = args.fontsize
+        config.font_name = args.fontname
+        config.text = "Checkbox"
+        config.checked = True
+        config.callme = checkchange
+        config.xx = basex
+        config.yy = basey
+        child = pCheck(config, args)
+        basey += child.geom.height + 4
         self.add_widget(child)
 
-        #
-        #child = pRadio(self.d, self.window, "Radio button",  basex, 170, callme)
-        #self.add_widget(child)
-        #
-        #config = pConfig()
-        #config.parent = self.window
-        #config.xx = basex
-        #config.yy = 220
-        #config.www = 250
-        #config.hhh = 150
-        #config.text = "Text Editor"
-        #
-        #child = pText(self.d, config)
-        #self.add_widget(child)
+        config = pConfig(disp, self.window)
+        config.font_size = args.fontsize
+        config.font_name = args.fontname
+        config.text = "Radio box"
+        config.checked = True
+        config.callme = checkchange
+        config.xx = basex
+        config.yy = basey
+        child = pRadio(config, args)
+        basey += child.geom.height + 4
+        self.add_widget(child)
+
+        config = pConfig(disp, self.window)
+        config.font_size = args.fontsize
+        config.font_name = args.fontname
+        config.text = "Label box:"
+        config.checked = True
+        config.callme = checkchange
+        config.xx = basex
+        config.yy = basey
+        child = pLabel(config, args)
+        basey += child.geom.height + 4
+        self.add_widget(child)
 
     def winloop(self):
         #print("Winloop")
@@ -117,7 +129,8 @@ class mainwin(MainWindow):
             if ret:
                 break
         # Exit
-        print("Exited loop.")
+        if args.verbose:
+            print("Exited Main loop.")
 
 # Define window dimensions and position
 x, y = 100, 100;
@@ -132,16 +145,6 @@ if __name__ == "__main__":
         sys.exit(1)
 
     args = argsfunc()
-
-    #print("exts", self.d.list_extensions())
-    # Add fonts
-    #old = disp.get_font_path()
-    #old.append("/usr/share/fonts/X11/100dpi")
-    #print("old font:", old)
-    #disp.set_font_path(old)
-    #newp = disp.get_font_path()
-    #print("new font:", newp)
-
     win = mainwin(disp, x, y, args.width, args.height, args)
     win.winloop()
     # Close the display connection
