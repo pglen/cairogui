@@ -12,6 +12,10 @@ from PIL import Image, ImageDraw, ImageFont
 
 from pguibase import BaseWindow, Makefont, pConfig, KeyState
 
+class Globals(object):
+    mainwin = None
+    toolwin = None
+
 class MainWindow(BaseWindow):
 
     def __init__(self, config, args):
@@ -44,7 +48,6 @@ class MainWindow(BaseWindow):
         #                                         | Xutil.PMinSize),
         #                                min_width = 20,
         #                                min_height = 20)
-        #self.geom = self.window.get_geometry()
 
     def add_widget(self,widget):
         self.children.append(widget)
@@ -58,6 +61,7 @@ class MainWindow(BaseWindow):
                     e.window.set_input_focus(X.RevertToParent, X.CurrentTime )
                     #print("focus change:", self.d.get_input_focus().focus,
                     #       "child:", e.window)
+                    pass
 
             # Main window has been destroyed, quit
             if e.type == X.DestroyNotify:
@@ -119,8 +123,8 @@ class MainWindow(BaseWindow):
         if e.type == X.KeyPress:
             keysym = self.d.keycode_to_keysym(e.detail, 0)
             was = self.keyh.handle_modkey(e, keysym)
-            if not was:
-                print("state:", hex(e.state), "key:", hex(keysym), str(self.keyh))
+            #if not was:
+            #    print("state:", hex(e.state), "key:", hex(keysym), str(self.keyh))
 
             if  self.keyh.alt and keysym == XK_x:
                 #print("ALT_X")
@@ -168,8 +172,7 @@ class MainWindow(BaseWindow):
             #print("main keyrelease", e, e.detail)
             keysym = self.d.keycode_to_keysym(e.detail, 0) #e.state & 0x1)
             was = self.keyh.handle_modkey(e, keysym)
-            if not was:
-                print("rele", hex(keysym), str(self.keyh))
-
+            #if not was:
+            #    print("rele", hex(keysym), str(self.keyh))
 
 # EOF

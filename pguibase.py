@@ -67,7 +67,7 @@ class Makefont(object):
         if not self.font:
             raise OSError("No font found. Tried: %s" % str(fontx))
         self.te   = self.font.getmetrics()
-        if args.verbose:
+        if args.verbose > 2:
             print("Got font:", fname)
         gl_font = self
 
@@ -127,7 +127,7 @@ class BaseWindow(object):
 
     def __init__(self, config, args):
 
-        if args.verbose:
+        if args.verbose > 1:
             print("basewindow", config)
 
         self.d = config.display
@@ -167,6 +167,7 @@ class BaseWindow(object):
             X.InputOutput,
             X.CopyFromParent,
             background_pixel = self.gray, #screen.white_pixel,
+            #background_pixel = self.white,
             event_mask = event_maskx,
             colormap = X.CopyFromParent,
             )
@@ -184,7 +185,6 @@ class BaseWindow(object):
             )
         self.window.map()
         self.geom = self.window.get_geometry()
-        #print("geom", self.geom)
 
     def invalidate(self, window = None):
 
@@ -208,9 +208,8 @@ class BaseWindow(object):
         else:
             self.gc.change(line_style=X.LineSolid)
             self.gc.change(foreground = self.gray)
-
         self.window.rectangle(self.gc, 0, 0,
-                        self.geom.width-1, self.geom.height-1)
+                        self.geom.width-2, self.geom.height-2)
         self.gc.change(line_style=X.LineSolid)
         self.gc.change(foreground = self.gray)
 
@@ -265,9 +264,10 @@ class   KeyState(object):
             if keysym == XK_Super_R:
                 self.super = True ;  was = True
 
+            # Toggle
             if keysym == XK_Caps_Lock:
-                self.caps = not self.caps
-                self.shift = self.caps ;
+                self.caps = not self.caps ; was = True
+                #self.shift = self.caps ;
 
         if e.type == 3:
             if keysym == XK_Alt_L:
@@ -286,6 +286,5 @@ class   KeyState(object):
                 self.super = False ;  was = True
 
         return was
-
 
 # EOF

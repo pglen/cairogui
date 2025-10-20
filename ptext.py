@@ -7,60 +7,78 @@ import  sys, time
 from    Xlib import X, display, Xutil, ext, protocol
 from    Xlib.keysymdef.latin1 import *
 
+from PIL import Image, ImageDraw, ImageFont
+
+from pguibase import BaseWindow, Makefont, pConfig, KeyState
 from pwidgets import BaseWindow
+from pyutils import *
+
+from    Xlib.keysymdef.latin1 import *
+from    Xlib.keysymdef.miscellany import *
 
 class pText(BaseWindow):
 
-    def __init__(self, disp, config):
+    def __init__(self, config, args):
 
         #print("pButton.__init__", display, parent, "text:", text,
         #                    xx, yy, "callme", callme, "border", border)
 
         self.config = config
-        self.callme = self.config.callme
         self.border = self.config.border
-        if type(config.text) != type(b""):
-            self.config.text = config.text.encode()
+        self.curx = 0 ; self.cury = 0
+        self.font = Makefont(config.font_name, config.font_size, args)
+        self.size = self.font.get_size(self.config.text)
 
-        font_name = "fixed-medium"
-        font_name = "times"
-        font_size = 14
-        fontx = "*%s*--%d*" % (font_name, font_size)
-        #fontx = "*"
-        #print("fontx", fontx)
-        #self.lll = self.d.list_fonts_with_info(fontx, 100)
-        self.lll = disp.list_fonts(fontx, 100)
-        #for aa in self.lll:
-        #    print(aa)
-        font = disp.open_font(self.lll[0])
-        self.te = font.query_text_extents(self.config.text)
-        #print("te", te)
-        #nhhh = self.te.font_ascent + self.te.font_descent + 4 * self.border
-        #nwww = self.te.overall_width + 4 * self.border
-
-        super().__init__(disp, config.parent, config.xx, config.yy,
-                                   config.www, config.hhh, config.border)
+        super().__init__(config, args)
+        self.charsize = self.font.get_size("a")
+        self.keyh = KeyState()
         self.geom = self.window.get_geometry()
         self.gc.change(line_width=self.border)
+        self.image = Image.new("RGB", (self.config.www, self.config.hhh), self.gray)
+        self.draw = ImageDraw.Draw(self.image)
         self.pressed = 0
         self._defstate()
 
-        #self.gc.change(foreground = self.screen.black_pixel)
-        #te = self.gc.query_text_extents(text)
-        self._textout()
-        #self.invalidate(self.window)
-        #print("gc:", dir(self.gc.query))
-        #te = self.gc.query()
-        #print("fff", te._data['char_infos'][0])
-        #print("te len:", len(ddd))
-        #for aa in te._data['char_infos']:
-        #    print("te:", aa['character_width'], end = " " )
+    def draw_font(self, text, offsx = 0, offsy = 0):
 
-    def _textout(self):
-        self.gc.change(foreground = self.screen.black_pixel)
-        self.window.draw_text(self.gc, 2 * self.border,
-                    self.te.font_ascent + 2 * self.border,
-                         self.config.text)
+        ''' Draw proportional font ; clear background '''
+
+        if not self.config.text:
+            return
+
+        self.draw.rectangle((0, 0, self.config.www, self.config.hhh), self.white)
+        xxx = self.curx * self.charsize[0]
+        yyy = self.cury * self.charsize[1]
+        linex = ""
+        for cnt, line in enumerate(self.config.text.split()):
+            #print("line", cnt, line, self.cury)
+            if cnt == self.cury:
+                print(self.cury, cnt, line)
+                linex = line
+        # Calculate line offset:
+        posx = 0
+        for cnt, aa in enumerate(linex):
+            sss = self.font.get_size(aa)
+            #print("aa", aa, sss)
+            if cnt >= self.curx:
+                break
+            posx += sss[0]
+        print("curr", linex, self.curx, "posx", posx)
+        try:
+            sss =  self.font.get_size(linex[self.curx])
+        except:
+            sss =  self.font.get_size("a")
+
+        print("sss", sss)
+        self.draw.rectangle((posx, yyy + self.charsize[1],
+                             posx + sss[0], yyy + self.charsize[1] + 2,
+                            ), self.black)
+
+        self.draw.text((self.pressed + offsx, self.pressed + offsy),
+                              text, fill="black",
+                                font=self.font.font, anchor="la")
+        self.window.put_pil_image(self.gc, self.config.border, self.config.border,
+                                            self.image)
 
     def _defstate(self):
         self.window.change_attributes(background_pixel = self.white)
@@ -73,7 +91,7 @@ class pText(BaseWindow):
             self.gc.change(line_style=X.LineSolid)
 
         self.window.rectangle(self.gc, 0, 0, self.geom.width-1, self.geom.height-1)
-        self._textout();
+        self.draw_font(self.config.text)
 
     def _focstate(self):
         self.gc.change(foreground = self.dgray)
@@ -84,11 +102,19 @@ class pText(BaseWindow):
 
         self.window.rectangle(self.gc, self.pressed, self.pressed,
                                 self.geom.width-1, self.geom.height-1)
-        self._textout();
+        self.draw_font(self.config.text)
 
         #self.invalidate(self.window)
 
     def pevent(self, e):
+        try:
+            self.peventw(e)
+        except:
+            #print("\nevent err:", sys.exc_info())
+            print_exc()
+
+    def peventw(self, e):
+
         #print("in pbutton event:", e)
         got = 0
         if e.type == X.CreateNotify:
@@ -103,16 +129,16 @@ class pText(BaseWindow):
             got = True
 
         if e.type == X.ButtonPress:
-            self.pressed = 1
+            #self.pressed = 1
             self._focstate()
             #print("pbutt mousepress", e)
 
         if e.type == X.ButtonRelease:
-            self.pressed = 0
+            #self.pressed = 0
             self._focstate()
             #print("pbutt mouserelease", e)
-            if self.callme:
-                self.callme(self)
+            if self.config.callme:
+                self.config.callme(self)
 
         if e.type == X.FocusIn:
             print("ptext focusIn", e)
@@ -125,12 +151,51 @@ class pText(BaseWindow):
             got = True
 
         if e.type == X.KeyPress:
-            print("ptext keypress", e)
+            #print("ptext keypress", e)
+            keysym = self.d.keycode_to_keysym(e.detail, e.state)
+            was = self.keyh.handle_modkey(e, keysym)
+            if not was:
+                redraw = False
+                ccc = chr(keysym)
+                print("ptext char:", keysym, chr(keysym))
+                if keysym == XK_Left:
+                    print("left arrow")
+                    if self.curx:
+                        self.curx -= 1
+                        redraw = True
+                elif keysym == XK_Right:
+                    print("right arrow")
+                    redraw = True
+                    self.curx += 1
+                elif keysym == XK_Up:
+                    print("up arrow")
+                    if self.cury:
+                        redraw = True
+                        self.cury -= 1
+                elif keysym == XK_Down:
+                    print("down arrow")
+                    redraw = True
+                    self.cury += 1
+
+                elif ccc.isprintable():
+                    redraw = True
+                    if keysym == XK_Return:
+                        #self.config.text += "\r"
+                        self.config.text += "\n"
+                        self.cury += 1
+                        self.curx =  0
+                    else:
+                        self.config.text += chr(keysym)
+                        self.curx += 1
+                if redraw:
+                    self.draw_font(self.config.text)
+                print("coord", self.curx, self.cury)
             got = True
 
         if e.type == X.KeyRelease:
-            print("ptext keyrelease", e)
+            #print("ptext keyrelease", e)
             got = True
 
         return got
 
+# EOF

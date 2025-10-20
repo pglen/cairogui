@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from Xlib.display import Display
 
 def printWindowHierrarchy(window, indent):

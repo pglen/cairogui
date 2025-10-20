@@ -13,14 +13,15 @@ from    Xlib.keysymdef.latin1 import *
 #print("file:", X.__file__)
 
 from pguibase import BaseWindow, pConfig
-from pwidgets import pConfig, pRadio, pCheck, pButton, pLabel
-from pmainwin import MainWindow
+from pwidgets import pConfig, pRadio, pCheck, pButton, pLabel, pTooltip
+from pmainwin import MainWindow, Globals
 from ptext import pText
 
 def argsfunc():
     # Add argument parsing
     parser = argparse.ArgumentParser(description='GUI toolkit')
-    parser.add_argument('-v', '--verbose', action="store_true", help='Verbosity level')
+    parser.add_argument('-v', '--verbose', action="count",
+                        default=0, help='Verbosity level')
     parser.add_argument('--text', help='Text to display')
     parser.add_argument('--fg-color', default='white',
                        help='Text color (white/black or hex color like #FFBB00)')
@@ -33,12 +34,13 @@ def argsfunc():
                        default=18,
                        help='Font size')
     parser.add_argument('--width', type=int,
-                       default=640,
+                       default=600,
                        help='Window size')
     parser.add_argument('--height', type=int,
                        default=512,
                        help='Window size')
     args = parser.parse_args()
+    #print("args", args)
     return args
 
 def callb(butt, delay=1):
@@ -55,6 +57,9 @@ def callme(butt):
 def checkchange(butt):
     print("Checkbox pressed done:", butt.config.text, butt.config.checked)
 
+def editchange(butt):
+    print("Edit changed done:", butt.config.text, butt.config.checked)
+
 class mainwin(MainWindow):
 
     def __init__(self, disp, xx, yy, width, height, args):
@@ -69,6 +74,7 @@ class mainwin(MainWindow):
 
         #child = pLabel(self.d, self.window, "Hello Label:", 6, 6)
         #self.add_widget(child)
+
         basex = 24 ; basey = 32
         # Add buttons
         for aa in range(4):
@@ -123,6 +129,21 @@ class mainwin(MainWindow):
         basey += child.geom.height + 4
         self.add_widget(child)
 
+        config = pConfig(disp, self.window)
+        config.font_size = args.fontsize
+        config.font_name = args.fontname
+        #config.text = "Tooltip:"
+        config.callme = editchange
+        config.xx = basex + 200
+        config.yy = 30 #basey
+        config.www = 300
+        config.hhh = 400
+        config.text = ""
+
+        child = pText(config, args)
+        basey += child.geom.height + 4
+        self.add_widget(child)
+
     def winloop(self):
         #print("Winloop")
         while 1:
@@ -148,6 +169,7 @@ if __name__ == "__main__":
 
     args = argsfunc()
     win = mainwin(disp, x, y, args.width, args.height, args)
+    Globals.mainwin = win
     win.winloop()
     # Close the display connection
     disp.close()
