@@ -58,7 +58,7 @@ def checkchange(butt):
     print("Checkbox pressed done:", butt.config.text, butt.config.checked)
 
 def editchange(butt):
-    print("Edit changed done:", butt.config.text, butt.config.checked)
+    print("Edit changed to:", butt.config.text)
 
 class mainwin(MainWindow):
 

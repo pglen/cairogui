@@ -39,6 +39,26 @@ class pText(BaseWindow):
         self.pressed = 0
         self._defstate()
 
+    def currline(self):
+        linex = ""
+        for cnt, line in enumerate(self.config.text.split()):
+            #print("line", cnt, line, self.cury)
+            if cnt == self.cury:
+                #print(self.cury, cnt, line)
+                linex = line
+        return linex
+
+    def pos2offs(self):
+        linex = ""; offs = 0
+        for cnt, line in enumerate(self.config.text.split()):
+            #print("line", cnt, line, self.cury)
+            if cnt == self.cury:
+                break
+            offs += len(line) + 1   # Placeholder for new line
+        offs += self.curx
+        #print("line offs:", offs)
+        return offs
+
     def draw_font(self, text, offsx = 0, offsy = 0):
 
         ''' Draw proportional font ; clear background '''
@@ -49,12 +69,7 @@ class pText(BaseWindow):
         self.draw.rectangle((0, 0, self.config.www, self.config.hhh), self.white)
         xxx = self.curx * self.charsize[0]
         yyy = self.cury * self.charsize[1]
-        linex = ""
-        for cnt, line in enumerate(self.config.text.split()):
-            #print("line", cnt, line, self.cury)
-            if cnt == self.cury:
-                print(self.cury, cnt, line)
-                linex = line
+        linex = self.currline()
         # Calculate line offset:
         posx = 0
         for cnt, aa in enumerate(linex):
@@ -63,13 +78,12 @@ class pText(BaseWindow):
             if cnt >= self.curx:
                 break
             posx += sss[0]
-        print("curr", linex, self.curx, "posx", posx)
+        #print("curr", linex, self.curx, "posx", posx)
         try:
             sss =  self.font.get_size(linex[self.curx])
         except:
             sss =  self.font.get_size("a")
-
-        print("sss", sss)
+        #print("sss", sss)
         self.draw.rectangle((posx, yyy + self.charsize[1],
                              posx + sss[0], yyy + self.charsize[1] + 2,
                             ), self.black)
@@ -152,30 +166,69 @@ class pText(BaseWindow):
 
         if e.type == X.KeyPress:
             #print("ptext keypress", e)
-            keysym = self.d.keycode_to_keysym(e.detail, e.state)
+            # Keystate translation is only valid for shift
+            keysym = self.d.keycode_to_keysym(e.detail, e.state & 0x3)
+            sss = str(chr(keysym))
+            #print("keysym:", keysym, sss)
+            if e.state & 0x2:
+                if  sss.islower():
+                    #print("capslock LOW")
+                    keysym -= 0x20
+                elif  sss.isupper():
+                    #print("capslock HIGH")
+                    keysym += 0x20
+
             was = self.keyh.handle_modkey(e, keysym)
             if not was:
                 redraw = False
                 ccc = chr(keysym)
-                print("ptext char:", keysym, chr(keysym))
+                #print("ptext char:", keysym, chr(keysym))
                 if keysym == XK_Left:
-                    print("left arrow")
-                    if self.curx:
+                    #print("left arrow")
+                    if self.curx > 0:
                         self.curx -= 1
-                        redraw = True
+                    else:
+                        linex = self.currline()
+                        if self.cury > 0:
+                            self.cury -= 1
+                            linex = self.currline()
+                            self.curx = len(linex)
+                    redraw = True
                 elif keysym == XK_Right:
-                    print("right arrow")
+                    #print("right arrow")
+                    linex = self.currline()
+                    if self.curx  < len(linex):
+                        self.curx += 1
+                    else:
+                        self.curx  = 0
+                        self.cury += 1
                     redraw = True
-                    self.curx += 1
                 elif keysym == XK_Up:
-                    print("up arrow")
+                    #print("up arrow")
                     if self.cury:
-                        redraw = True
                         self.cury -= 1
+                        redraw = True
                 elif keysym == XK_Down:
-                    print("down arrow")
-                    redraw = True
+                    #print("down arrow")
                     self.cury += 1
+                    redraw = True
+                elif keysym == XK_BackSpace:
+                    if self.curx == 0:
+                        if self.cury > 0:
+                            self.cury -= 1
+                            linex = self.currline()
+                            self.curx = len(linex)
+                            posx = self.pos2offs()
+                            tmptxt = self.config.text[:posx]
+                            tmptxt += self.config.text[posx+1:]
+                            self.config.text = tmptxt
+                    else:
+                        posx = self.pos2offs()
+                        tmptxt = self.config.text[:posx]
+                        tmptxt += self.config.text[posx+1:]
+                        self.config.text = tmptxt
+                        self.curx -= 1
+                    redraw = True
 
                 elif ccc.isprintable():
                     redraw = True
@@ -185,11 +238,15 @@ class pText(BaseWindow):
                         self.cury += 1
                         self.curx =  0
                     else:
-                        self.config.text += chr(keysym)
+                        posx = self.pos2offs()
+                        tmptxt = self.config.text[:posx]
+                        tmptxt += chr(keysym)
+                        tmptxt += self.config.text[posx:]
+                        self.config.text = tmptxt
                         self.curx += 1
                 if redraw:
                     self.draw_font(self.config.text)
-                print("coord", self.curx, self.cury)
+                #print("coord", self.curx, self.cury, self.pos2offs())
             got = True
 
         if e.type == X.KeyRelease:

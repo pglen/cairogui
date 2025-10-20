@@ -152,7 +152,7 @@ class MainWindow(BaseWindow):
                 # Cycle to previous / next
                 for _ in range(len(self.children)):
                     if cnt < 0:         # Wrap around
-                        cnt = 0
+                        cnt = len(self.children)-1
                     if cnt >= len(self.children):
                         cnt = 0
                     if self.children[cnt].config.nofocus:
@@ -161,9 +161,8 @@ class MainWindow(BaseWindow):
                             cnt -= 1
                         else:
                             cnt += 1
-                # Cy
                     else:
-                        break
+                        break       # Found one
 
                 self.children[cnt].window.set_input_focus \
                                 (X.RevertToParent, X.CurrentTime )
