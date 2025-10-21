@@ -2,6 +2,7 @@
 
 clean:
 	@echo cleaning
+	rm -rf __pycache__
 
 git:
 	git add .

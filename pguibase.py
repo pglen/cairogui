@@ -10,6 +10,10 @@ from    Xlib.keysymdef.miscellany import *
 
 from PIL import Image, ImageDraw, ImageFont
 
+#import PIL
+#print(PIL.__version__)
+#sys.exit()
+
 #fontx = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 # Web Safe Fonts:
@@ -45,19 +49,21 @@ class Makefont(object):
         # Try command line font first
         try:
             fname = fontname
+            print("Try:", fontname)
             self.font = ImageFont.truetype(fontname, size=size)
-        except: pass
-
+        except:
+            pass
+            print("get font:", sys.exc_info())
         if not self.font:
             while True:
                 fname = fontx[cnt]
                 if not fname:
                     break
                 try:
-                    #print("Try:", fontname)
+                    print("Try:", fontname)
                     self.font = ImageFont.truetype(fname, size=size)
                 except:
-                    #print(sys.exc_info())
+                    print(sys.exc_info())
                     pass
                 if self.font:
                     break
@@ -70,19 +76,26 @@ class Makefont(object):
         if args.verbose > 2:
             print("Got font:", fname)
         gl_font = self
+        print("font:", dir(self.font))
 
     def get_size(self, text):
 
         ''' Get font size, Fake ascent / descent '''
 
-        font_width, font_height = self.font.getsize(text)
-        fake_width, fake_height = self.font.getsize("Ag")
-        return font_width, fake_height
+        #font_width, font_height = self.font.getsize(text)
+        #print("size",  font_width, font_height)
+        #fake_width, fake_height = self.font.getsize("Ag")
+
+        font_bound = self.font.getbbox(text)
+        #print("bound",  font_bound)
+        return font_bound[2], font_bound[3]
 
     def get_realsize(self, text):
 
-        font_width, font_height = self.font.getsize(text)
-        return font_width, font_height
+        #font_width, font_height = self.font.getsize(text)
+        #return font_width, font_height
+        font_bound = self.font.getbbox(text)
+        return font_bound[2], font_bound[3]
 
 class pConfig(object):
 
