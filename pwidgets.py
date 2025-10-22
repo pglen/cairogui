@@ -312,7 +312,7 @@ class pCheck(BaseWindow):
         self.pressed = 0
         self.font = Makefont(config.font_name, config.font_size, args)
         self.size = self.font.get_size(self.config.text)
-        self.csize = self.font.get_realsize("W")
+        self.csize = self.font.get_size("W")
         config.www, config.hhh = self.size
         config.www += 3 * config.border + self.csize[0]
         config.hhh += 2 * config.border
@@ -426,7 +426,7 @@ class pRadio(BaseWindow):
 
         self.font = Makefont(config.font_name, config.font_size, args)
         self.size = self.font.get_size(self.config.text)
-        self.csize = self.font.get_realsize("W")
+        self.csize = self.font.get_size("W")
         config.www, config.hhh = self.size
         config.www += 3 * config.border + self.csize[0]
         config.hhh += 2 * config.border
@@ -542,7 +542,7 @@ class pLabel(BaseWindow):
 
         self.font = Makefont(config.font_name, config.font_size, args)
         self.size = self.font.get_size(self.config.text)
-        self.csize = self.font.get_realsize("W")
+        self.csize = self.font.get_size("W")
         config.www, config.hhh = self.size
         config.www += 2 * config.border
         config.hhh += 2 * config.border
